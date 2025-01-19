@@ -6,7 +6,7 @@ import FolderEl, { Folder } from "../components/Folder";
 import LinkEl, { Link } from "../components/Link";
 import { FaFolderPlus } from "react-icons/fa6";
 import { IoIosLink } from "react-icons/io";
-import { MdOutlineArrowBackIosNew } from "react-icons/md";
+import { FaLevelUpAlt } from "react-icons/fa";
 
 import { PiFolderSimple } from "react-icons/pi";
 import Popover from "../components/Popover";
@@ -65,11 +65,27 @@ export default function Home() {
   }
 
   return (
-    <div className="w-full h-[100vh] bg-[#242424] text-white">
+    <div className="w-full max-w-screen-lg mx-auto h-[100vh] text-white">
       {/* header */}
-      <section className="max-w-screen-md mx-auto p-4 flex justify-between items-center">
-        <h1 className="text-3xl font-semibold">My Links</h1>
-        <h2 className="text-xl text-gray-400 mt-2">
+      <section
+        className="w-full p-4 
+      flex justify-between items-center relative"
+      >
+        <h1 className="inline-block text-3xl font-semibold">My Links</h1>
+        <h2
+          className="
+        text-xl text-gray-400 mt-2
+        absolute top-[3rem] left-0
+        flex justify-center items-center
+        "
+        >
+          <span className="mx-4">
+            Path:{" "}
+            {searchParams.get("path") === "" || !searchParams.get("path")
+              ? "/"
+              : searchParams.get("path")}
+          </span>
+
           {searchParams.get("path") &&
             searchParams.get("path") !== "" &&
             searchParams.get("path") !== "/" && (
@@ -83,20 +99,15 @@ export default function Home() {
                       .join("/"),
                   })
                 }
+                className="bg-gray-600 text-white p-2 rounded-full hover:bg-gray-700 transition-all"
               >
-                <MdOutlineArrowBackIosNew size={14 * 1.5} />
+                <FaLevelUpAlt size={14 * 1.5} />
               </button>
             )}
-          <span className="mx-4">
-            Path:{" "}
-            {searchParams.get("path") === "" || !searchParams.get("path")
-              ? "/"
-              : searchParams.get("path")}
-          </span>
         </h2>
 
         {/* add buttons */}
-        <div className="flex justify-end space-x-4 mt-4">
+        <div className="flex justify-center items-center gap-2">
           <Popover
             triggerOpen={
               isPopupOpen !== 0 && defaultData.type === "link-folder"
@@ -124,14 +135,13 @@ export default function Home() {
                 }}
               />
             )}
-            position="top"
           >
             <button
               onClick={() => {
                 setDefaultData({ type: "link-folder" });
                 setTimeout(() => setIsPopupOpen((prev) => prev + 1), 50);
               }}
-              className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all"
+              className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all flex justify-center items-center"
             >
               <FaFolderPlus className="text-xl" />
             </button>
@@ -161,14 +171,13 @@ export default function Home() {
                 }}
               />
             )}
-            position="top"
           >
             <button
               onClick={() => {
                 setDefaultData({ type: "link" });
                 setTimeout(() => setIsPopupOpen((prev) => prev + 1), 50);
               }}
-              className="bg-green-600 text-white p-2 rounded-full hover:bg-green-700 transition-all"
+              className="bg-green-600 text-white p-2 rounded-full hover:bg-green-700 transition-all flex justify-center items-center"
             >
               <AiOutlineFileAdd className="text-xl" />
             </button>
@@ -177,7 +186,7 @@ export default function Home() {
       </section>
 
       {/* folders list */}
-      <div className="max-w-screen-md mx-auto p-4 flex flex-wrap gap-4">
+      <section className="w-full mt-5 p-4 flex flex-wrap gap-4">
         <PiFolderSimple size={14 * 2.5} />
         {elements
           .filter((e) => e.type === "link-folder")
@@ -196,10 +205,10 @@ export default function Home() {
               }}
             />
           ))}
-      </div>
+      </section>
 
       {/* files list */}
-      <div className="max-w-screen-md mx-auto p-4 flex flex-wrap gap-4">
+      <div className="w-full p-4 flex flex-wrap gap-4">
         <IoIosLink size={14 * 2.5} />
         {elements
           .filter((e) => e.type === "link")

@@ -44,7 +44,9 @@ export default function Link(props: {
   return (
     <button
       onMouseDown={handleMouseDown}
+      onTouchStart={handleMouseDown}
       onMouseUp={handleMouseUp}
+      onTouchEnd={handleMouseUp}
       onMouseLeave={handleMouseLeave} // In case the mouse leaves the button
       className="px-6 py-2 bg-green-500 text-white rounded-lg select-none"
     >

@@ -43,7 +43,9 @@ export default function Folder(props: {
   return (
     <button
       onMouseDown={handleMouseDown}
+      onTouchStart={handleMouseDown}
       onMouseUp={handleMouseUp}
+      onTouchEnd={handleMouseUp}
       onMouseLeave={handleMouseLeave} // In case the mouse leaves the button
       className="px-6 py-2 bg-blue-500 text-white rounded-lg"
     >

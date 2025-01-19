@@ -5,14 +5,12 @@ type PopoverProps = {
   triggerOpen?: number;
   Content: React.ElementType;
   children: React.ReactNode;
-  position?: "top" | "bottom" | "left" | "right";
 };
 
 const Popover: React.FC<PopoverProps> = ({
   triggerOpen = 0,
   Content,
   children,
-  position = "bottom",
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const popoverRef = useRef<HTMLDivElement | null>(null);
@@ -62,14 +60,7 @@ const Popover: React.FC<PopoverProps> = ({
   }, [triggerOpen]);
 
   const popoverContent = (
-    <div
-      ref={popoverRef}
-      className={`absolute bg-white border rounded shadow-lg p-4 z-50 ${
-        position === "top" ? "bottom-full mb-2" : ""
-      } ${position === "bottom" ? "top-full mt-2" : ""} ${
-        position === "left" ? "right-full mr-2" : ""
-      } ${position === "right" ? "left-full ml-2" : ""}`}
-    >
+    <div ref={popoverRef}>
       <Content onClose={togglePopover} />
     </div>
   );
