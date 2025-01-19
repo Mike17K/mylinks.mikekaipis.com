@@ -1,3 +1,4 @@
+import { MdDelete } from "react-icons/md";
 import { useEffect, useState } from "react";
 import { Item } from "../../components/index";
 import { Link } from "../../components/Link";
@@ -5,16 +6,16 @@ import { Link } from "../../components/Link";
 type AddItemPopupContentProps = {
   defaultData?: Partial<Item>;
   onAdd: (item: Item) => void;
+  onDelete: (id: string) => void;
 };
 
 export default function AddItemPopupContent({
   defaultData,
   onAdd,
+  onDelete,
 }: AddItemPopupContentProps) {
   const [data, setData] = useState<Partial<Item>>(defaultData ?? {});
   const [error, setError] = useState<string | null>(null);
-
-  console.log("defaultData", defaultData, "data", data);
 
   useEffect(() => {
     setData(defaultData ?? {});
@@ -46,7 +47,7 @@ export default function AddItemPopupContent({
       .toLowerCase();
 
     let newPath = "/";
-    if (data.id) {
+    if (data.id && data.type !== "link") {
       // update operation
       newPath = data.path!;
     } else {
@@ -60,12 +61,29 @@ export default function AddItemPopupContent({
 
   return (
     <div className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded shadow-lg w-96">
-      <h1 className="text-lg font-bold mb-4">Add Item</h1>
+      {/* header */}
+      <div className="select-none flex justify-between items-center mb-4">
+        <h1
+          className="text-lg font-bold flex items-center justify-center
+        "
+        >
+          Add Item
+        </h1>
+        <button
+          onClick={() => {
+            setData({});
+            onDelete(data.id!);
+          }}
+          className="text-sm text-gray-500 flex items-center justify-center"
+        >
+          <MdDelete size={14 * 2} />
+        </button>
+      </div>
 
       <div className="mb-4">
         <label
           htmlFor="title"
-          className="block text-sm font-medium text-gray-700"
+          className="select-none block text-sm font-medium text-gray-700"
         >
           Title
         </label>
@@ -74,14 +92,14 @@ export default function AddItemPopupContent({
           type="text"
           value={data?.title ?? ""}
           onChange={(e) => handleInputChange("title", e.target.value)}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          className="px-4 py-1 mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
         />
       </div>
 
       <div className="mb-4">
         <label
           htmlFor="path"
-          className="block text-sm font-medium text-gray-700"
+          className="select-none block text-sm font-medium text-gray-700"
         >
           Path
         </label>
@@ -91,7 +109,7 @@ export default function AddItemPopupContent({
           disabled={true}
           value={data?.path ?? ""}
           // onChange={(e) => handleInputChange("path", e.target.value)}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          className="px-4 py-1 mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
         />
       </div>
 
@@ -99,19 +117,19 @@ export default function AddItemPopupContent({
         <div className="mb-4">
           <label
             htmlFor="url"
-            className="block text-sm font-medium text-gray-700"
+            className="select-none block text-sm font-medium text-gray-700"
           >
             URL
           </label>
           <input
             id="url"
-            type="text"
+            type="url"
             value={data?.url ?? ""}
             onChange={(e) =>
               data.type === "link" &&
               handleInputChange<Link>("url", e.target.value)
             }
-            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="px-4 py-1 mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
         </div>
       )}
@@ -120,7 +138,7 @@ export default function AddItemPopupContent({
 
       <button
         onClick={handleAdd}
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full"
+        className="select-none bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full"
       >
         Add Item
       </button>

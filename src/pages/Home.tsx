@@ -64,6 +64,18 @@ export default function Home() {
     setElements(filteredData);
   }
 
+  function onDelete(id: string) {
+    const data = (
+      JSON.parse(localStorage.getItem("data") ?? "[]") as Item[]
+    ).filter((d) => d.id !== id);
+    localStorage.setItem("data", JSON.stringify(data));
+
+    // filter and set elements
+    const path = searchParams.get("path") ?? "";
+    const filteredData = filterData(data, path);
+    setElements(filteredData);
+  }
+
   return (
     <div className="w-full max-w-screen-lg mx-auto h-[100vh] text-white">
       {/* header */}
@@ -71,9 +83,11 @@ export default function Home() {
         className="w-full p-4 
       flex justify-between items-center relative"
       >
-        <h1 className="inline-block text-3xl font-semibold">My Links</h1>
+        <h1 className="select-none inline-block text-3xl font-semibold">
+          My Links
+        </h1>
         <h2
-          className="
+          className=" select-none
         text-xl text-gray-400 mt-2
         absolute top-[3rem] left-0
         flex justify-center items-center
@@ -116,6 +130,10 @@ export default function Home() {
             }
             Content={({ onClose }) => (
               <AddItemPopupContent
+                onDelete={(id) => {
+                  onDelete(id);
+                  onClose();
+                }}
                 defaultData={
                   {
                     ...defaultData,
@@ -152,6 +170,10 @@ export default function Home() {
             }
             Content={({ onClose }) => (
               <AddItemPopupContent
+                onDelete={(id) => {
+                  onDelete(id);
+                  onClose();
+                }}
                 defaultData={
                   {
                     ...defaultData,

@@ -47,7 +47,7 @@ export default function Folder(props: {
       onMouseUp={handleMouseUp}
       onTouchEnd={handleMouseUp}
       onMouseLeave={handleMouseLeave} // In case the mouse leaves the button
-      className="px-6 py-2 bg-blue-500 text-white rounded-lg"
+      className="select-none px-6 py-2 bg-blue-500 text-white rounded-lg"
     >
       {props.data.title}
     </button>
