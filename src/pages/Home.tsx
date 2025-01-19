@@ -18,28 +18,50 @@ export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [elements, setElements] = useState<Item[]>([]);
 
+  const [defaultData, setDefaultData] = useState<Partial<Item>>({});
+  const [isPopupOpen, setIsPopupOpen] = useState<number>(0);
+
+  function filterData(data: Item[], path: string) {
+    return data.filter((d) => {
+      const pathParts = d.path.split("/");
+      const searchPathParts = path.split("/");
+
+      // keep the parts that are folders and have number of parts == searchPathParts + 1
+      // keep the parts that are files and have number of parts == searchPathParts
+      if (d.type === "link-folder") {
+        return (
+          pathParts.length === searchPathParts.length + 1 &&
+          pathParts.join("/").startsWith(searchPathParts.join("/"))
+        );
+      } else if (d.type === "link") {
+        return (
+          pathParts.length === searchPathParts.length + 1 &&
+          pathParts.join("/").startsWith(searchPathParts.join("/"))
+        );
+      }
+      return false;
+    });
+  }
+
   useEffect(() => {
     const path = searchParams.get("path") ?? "";
-
-    // get stored data from localstorage
     const data = JSON.parse(localStorage.getItem("data") ?? "[]") as Item[];
-    setElements(
-      data.filter(
-        (d) =>
-          (d.type === "link-folder" &&
-            d.path.includes(path) &&
-            d.path !== path) ||
-          (d.type === "link" && d.path.includes(path))
-      )
-    );
+    const filterdData = filterData(data, path);
+    setElements(filterdData);
   }, [searchParams]);
 
   function addElement(f: Item) {
     // add to local storage
-    const data = JSON.parse(localStorage.getItem("data") ?? "[]") as Item[];
+    const data = (
+      JSON.parse(localStorage.getItem("data") ?? "[]") as Item[]
+    ).filter((d) => d.id !== f.id || d.type !== f.type);
     data.push(f as Item);
     localStorage.setItem("data", JSON.stringify(data));
-    setElements(data);
+
+    // filter and set elements
+    const path = searchParams.get("path") ?? "";
+    const filteredData = filterData(data, path);
+    setElements(filteredData);
   }
 
   return (
@@ -65,50 +87,89 @@ export default function Home() {
                 <MdOutlineArrowBackIosNew size={14 * 1.5} />
               </button>
             )}
-          <span className="mx-4">Path: {searchParams.get("path") ?? "/"}</span>
+          <span className="mx-4">
+            Path:{" "}
+            {searchParams.get("path") === "" || !searchParams.get("path")
+              ? "/"
+              : searchParams.get("path")}
+          </span>
         </h2>
 
         {/* add buttons */}
         <div className="flex justify-end space-x-4 mt-4">
           <Popover
+            triggerOpen={
+              isPopupOpen !== 0 && defaultData.type === "link-folder"
+                ? isPopupOpen
+                : 0
+            }
             Content={({ onClose }) => (
               <AddItemPopupContent
                 defaultData={
                   {
+                    ...defaultData,
                     type: "link-folder",
-                    path: searchParams.get("path") ?? "/",
+                    path:
+                      searchParams.get("path") === "" ||
+                      !searchParams.get("path")
+                        ? "/"
+                        : searchParams.get("path"),
                   } as Partial<Folder>
                 }
                 onAdd={(f) => {
                   addElement(f);
+                  setDefaultData({});
+                  setIsPopupOpen(0);
                   onClose();
                 }}
               />
             )}
             position="top"
           >
-            <button className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all">
+            <button
+              onClick={() => {
+                setDefaultData({ type: "link-folder" });
+                setTimeout(() => setIsPopupOpen((prev) => prev + 1), 50);
+              }}
+              className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all"
+            >
               <FaFolderPlus className="text-xl" />
             </button>
           </Popover>
           <Popover
+            triggerOpen={
+              isPopupOpen !== 0 && defaultData.type === "link" ? isPopupOpen : 0
+            }
             Content={({ onClose }) => (
               <AddItemPopupContent
                 defaultData={
                   {
-                    path: searchParams.get("path") ?? "/",
+                    ...defaultData,
+                    path:
+                      searchParams.get("path") === "" ||
+                      !searchParams.get("path")
+                        ? "/"
+                        : searchParams.get("path"),
                     type: "link",
                   } as Partial<Link>
                 }
                 onAdd={(f) => {
                   addElement(f);
+                  setDefaultData({});
+                  setIsPopupOpen(0);
                   onClose();
                 }}
               />
             )}
             position="top"
           >
-            <button className="bg-green-600 text-white p-2 rounded-full hover:bg-green-700 transition-all">
+            <button
+              onClick={() => {
+                setDefaultData({ type: "link" });
+                setTimeout(() => setIsPopupOpen((prev) => prev + 1), 50);
+              }}
+              className="bg-green-600 text-white p-2 rounded-full hover:bg-green-700 transition-all"
+            >
               <AiOutlineFileAdd className="text-xl" />
             </button>
           </Popover>
@@ -129,6 +190,10 @@ export default function Home() {
                 urlparams.set("path", e.path);
                 setSearchParams(urlparams);
               }}
+              onEdit={() => {
+                setDefaultData(e);
+                setIsPopupOpen((prev) => prev + 1);
+              }}
             />
           ))}
       </div>
@@ -143,6 +208,10 @@ export default function Home() {
               key={e.path + e.title}
               data={e}
               onClick={() => window.open(e.url)}
+              onEdit={() => {
+                setDefaultData(e);
+                setIsPopupOpen((prev) => prev + 1);
+              }}
             />
           ))}
       </div>

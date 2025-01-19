@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 
 type PopoverProps = {
+  triggerOpen?: number;
   Content: React.ElementType;
   children: React.ReactNode;
   position?: "top" | "bottom" | "left" | "right";
 };
 
 const Popover: React.FC<PopoverProps> = ({
+  triggerOpen = 0,
   Content,
   children,
   position = "bottom",
@@ -37,6 +39,28 @@ const Popover: React.FC<PopoverProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (isVisible) {
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          setIsVisible(false);
+        }
+      };
+      document.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (!triggerOpen || triggerOpen === 0) {
+      return;
+    }
+    // trigger open when triggerOpen is true
+    setIsVisible(true);
+  }, [triggerOpen]);
+
   const popoverContent = (
     <div
       ref={popoverRef}
@@ -52,9 +76,7 @@ const Popover: React.FC<PopoverProps> = ({
 
   return (
     <div className="relative inline-block">
-      <button ref={buttonRef} onClick={togglePopover}>
-        {children}
-      </button>
+      {children}
       {isVisible && ReactDOM.createPortal(popoverContent, document.body)}
     </div>
   );

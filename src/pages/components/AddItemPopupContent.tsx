@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Item } from "../../components";
 import { Link } from "../../components/Link";
 
@@ -13,6 +13,12 @@ export default function AddItemPopupContent({
 }: AddItemPopupContentProps) {
   const [data, setData] = useState<Partial<Item>>(defaultData ?? {});
   const [error, setError] = useState<string | null>(null);
+
+  console.log("defaultData", defaultData, "data", data);
+
+  useEffect(() => {
+    setData(defaultData ?? {});
+  }, [defaultData]);
 
   function handleInputChange<T extends Item>(field: keyof T, value: string) {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -39,9 +45,16 @@ export default function AddItemPopupContent({
       .replaceAll(" ", "-")
       .toLowerCase();
 
-    const newPath = (data.path === "/" ? "/" : data.path + "/") + id;
+    let newPath = "/";
+    if (data.id) {
+      // update operation
+      newPath = data.path!;
+    } else {
+      // create operation
+      newPath = (data.path === "/" ? "/" : data.path + "/") + id;
+    }
 
-    onAdd({ ...data, path: newPath } as Item);
+    onAdd({ ...data, id: data.id ?? id, path: newPath } as Item);
     setData({}); // Clear form after successful addition
   };
 
