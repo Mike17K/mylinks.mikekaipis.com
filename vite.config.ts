@@ -5,6 +5,6 @@ import viteCompression from 'vite-plugin-compression';
 export default defineConfig({
   plugins: [mkcert(), viteCompression()],
   server: {
-    port: 4355,
+    port: 3001,
   },
 })
