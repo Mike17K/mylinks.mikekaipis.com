@@ -1,7 +1,7 @@
-import { Folder } from './Folder';
-import { Link } from './Link';
+import { Folder } from './Folder.js';
+import { Link } from './Link.js';
 
-export { default as Folder } from './Folder';
-export { default as Link } from './Link';
+export { default as Folder } from './Folder.js';
+export { default as Link } from './Link.js';
 
 export type Item = Folder | Link;

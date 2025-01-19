@@ -1,9 +1,11 @@
 {
-    "compilerOptions": {
-      "composite": true,
-      "module": "CommonJS",
-      "esModuleInterop": true
-    },
-    "include": ["vite.config.ts"]
-  }
-  
+  "compilerOptions": {
+    "composite": true,
+    "skipDefaultLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "strict": true
+  },
+  "include": ["vite.config.ts"]
+}

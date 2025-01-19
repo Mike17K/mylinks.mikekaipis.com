@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Item } from "../../components";
+import { Item } from "../../components/index";
 import { Link } from "../../components/Link";
 
 type AddItemPopupContentProps = {
@@ -21,7 +21,7 @@ export default function AddItemPopupContent({
   }, [defaultData]);
 
   function handleInputChange<T extends Item>(field: keyof T, value: string) {
-    setData((prev) => ({ ...prev, [field]: value }));
+    setData((prev: Partial<Item>) => ({ ...prev, [field]: value }));
     if (error) setError(null); // Clear error on new input
   }
 

@@ -12,7 +12,7 @@ import { PiFolderSimple } from "react-icons/pi";
 import Popover from "../components/Popover";
 import AddItemPopupContent from "./components/AddItemPopupContent";
 import { AiOutlineFileAdd } from "react-icons/ai";
-import { Item } from "../components";
+import { Item } from "../components/index";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
