@@ -5,6 +5,11 @@ export type Folder = {
   type: "link-folder";
   title: string;
   path: string;
+
+  dimentions?: {
+    id: string;
+    value: number;
+  }[];
 };
 
 export default function Folder(props: {

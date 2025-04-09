@@ -2,29 +2,46 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 // Items
-import FolderEl, { Folder } from "../components/Folder";
-import LinkEl, { Link } from "../components/Link";
+import FolderEl, { Folder } from "../../components/Folder";
+import LinkEl, { Link } from "../../components/Link";
 import { FaFolderPlus } from "react-icons/fa6";
 import { IoIosLink } from "react-icons/io";
 import { FaLevelUpAlt } from "react-icons/fa";
 
 import { PiFolderSimple } from "react-icons/pi";
-import Popover from "../components/Popover";
+import Popover from "../../components/Popover";
 import AddItemPopupContent from "./components/AddItemPopupContent";
-import { AiOutlineFileAdd } from "react-icons/ai";
-import { Item } from "../components/index";
+import { AiOutlineFileAdd, AiTwotoneCompass } from "react-icons/ai";
+import { Item } from "../../components/index";
+import SearchSidebar from "./components/SearchSidebar";
+import { Dimention } from "../../components/Dimention";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [dimentions, setDimentions] = useState<Dimention[]>([]);
   const [elements, setElements] = useState<Item[]>([]);
 
   const [defaultData, setDefaultData] = useState<Partial<Item>>({});
   const [isPopupOpen, setIsPopupOpen] = useState<number>(0);
 
-  function filterData(data: Item[], path: string) {
+  function getDataBasePathOnly(data: Item[]): Item[] {
+    let shorterPath = undefined as string | undefined;
+    data.forEach((d) => {
+      if (d.type === "dimention") return;
+      if (!shorterPath || d.path.length < shorterPath.length) {
+        shorterPath = d.path;
+      }
+    });
+    const parts = (shorterPath ?? "").split("/");
+    shorterPath = parts.slice(0, parts.length - 1).join("/");
+
+    console.log(shorterPath);
+
     return data.filter((d) => {
+      if (d.type === "dimention") return false;
+
       const pathParts = d.path.split("/");
-      const searchPathParts = path.split("/");
+      const searchPathParts = (shorterPath ?? "").split("/");
 
       // keep the parts that are folders and have number of parts == searchPathParts + 1
       // keep the parts that are files and have number of parts == searchPathParts
@@ -43,11 +60,22 @@ export default function Home() {
     });
   }
 
+  function filterData(data: Item[], path: string) {
+    return data.filter(
+      (d) => d.type !== "dimention" && d.path.startsWith(path)
+    );
+  }
+
   useEffect(() => {
     const path = searchParams.get("path") ?? "";
     const data = JSON.parse(localStorage.getItem("data") ?? "[]") as Item[];
     const filterdData = filterData(data, path);
     setElements(filterdData);
+
+    const dimentionsData = JSON.parse(
+      localStorage.getItem("dimentions") ?? "[]"
+    ) as Dimention[];
+    setDimentions(dimentionsData);
   }, [searchParams]);
 
   function addElement(f: Item) {
@@ -64,7 +92,7 @@ export default function Home() {
     setElements(filteredData);
   }
 
-  function onDelete(id: string) {
+  function onDeleteItem(id: string) {
     const data = (
       JSON.parse(localStorage.getItem("data") ?? "[]") as Item[]
     ).filter((d) => d.id !== id);
@@ -76,8 +104,43 @@ export default function Home() {
     setElements(filteredData);
   }
 
+  function addDimention(d: Dimention) {
+    // add dimention if new
+    const dimentionsData = (
+      JSON.parse(localStorage.getItem("dimentions") ?? "[]") as Dimention[]
+    ).filter((dim) => dim.id !== d.id);
+    dimentionsData.push(d);
+    localStorage.setItem("dimentions", JSON.stringify(dimentionsData));
+    setDimentions(dimentionsData);
+  }
+
+  function deleteDimention(id: string) {
+    // add dimention if new
+    const dimentionsData = (
+      JSON.parse(localStorage.getItem("dimentions") ?? "[]") as Dimention[]
+    ).filter((d) => d.id !== id);
+    localStorage.setItem("dimentions", JSON.stringify(dimentionsData));
+    setDimentions(dimentionsData);
+
+    const data = (JSON.parse(localStorage.getItem("data") ?? "[]") as Item[])
+      .filter((d) => d.type !== "dimention")
+      .map((d) => ({
+        ...d,
+        dimentions: [...(d.dimentions ?? []).filter((dim) => dim.id !== id)],
+      }));
+    localStorage.setItem("data", JSON.stringify(data));
+
+    // filter and set elements
+    const path = searchParams.get("path") ?? "";
+    const filteredData = filterData(data, path);
+    setElements(filteredData);
+  }
+
   return (
     <div className="w-full max-w-screen-lg mx-auto h-[100vh] text-white">
+      {/* sidebar */}
+      <SearchSidebar elements={elements} dimentions={dimentions} />
+
       {/* header */}
       <section
         className="w-full p-4 
@@ -122,6 +185,46 @@ export default function Home() {
 
         {/* add buttons */}
         <div className="flex justify-center items-center gap-2">
+          {/* add dimention popup */}
+          <Popover
+            triggerOpen={
+              isPopupOpen !== 0 && defaultData.type === "dimention"
+                ? isPopupOpen
+                : 0
+            }
+            Content={({ onClose }) => (
+              <AddItemPopupContent
+                dimentions={dimentions}
+                onDelete={(id) => {
+                  deleteDimention(id);
+                  onClose();
+                }}
+                defaultData={
+                  {
+                    ...defaultData,
+                    type: "dimention",
+                  } as Partial<Dimention>
+                }
+                onAdd={(f) => {
+                  addDimention(f as Dimention);
+                  setDefaultData({});
+                  setIsPopupOpen(0);
+                  onClose();
+                }}
+              />
+            )}
+          >
+            <button
+              onClick={() => {
+                setDefaultData({ type: "dimention" });
+                setTimeout(() => setIsPopupOpen((prev) => prev + 1), 50);
+              }}
+              className="bg-yellow-600 text-white p-2 rounded-full hover:bg-yellow-700 transition-all flex justify-center items-center"
+            >
+              <AiTwotoneCompass className="text-xl" />
+            </button>
+          </Popover>
+          {/* add folder */}
           <Popover
             triggerOpen={
               isPopupOpen !== 0 && defaultData.type === "link-folder"
@@ -130,8 +233,9 @@ export default function Home() {
             }
             Content={({ onClose }) => (
               <AddItemPopupContent
+                dimentions={dimentions}
                 onDelete={(id) => {
-                  onDelete(id);
+                  onDeleteItem(id);
                   onClose();
                 }}
                 defaultData={
@@ -164,14 +268,16 @@ export default function Home() {
               <FaFolderPlus className="text-xl" />
             </button>
           </Popover>
+          {/* add link */}
           <Popover
             triggerOpen={
               isPopupOpen !== 0 && defaultData.type === "link" ? isPopupOpen : 0
             }
             Content={({ onClose }) => (
               <AddItemPopupContent
+                dimentions={dimentions}
                 onDelete={(id) => {
-                  onDelete(id);
+                  onDeleteItem(id);
                   onClose();
                 }}
                 defaultData={
@@ -210,7 +316,7 @@ export default function Home() {
       {/* folders list */}
       <section className="w-full mt-5 p-4 flex flex-wrap gap-4">
         <PiFolderSimple size={14 * 2.5} />
-        {elements
+        {getDataBasePathOnly(elements)
           .filter((e) => e.type === "link-folder")
           .map((e) => (
             <FolderEl
@@ -232,7 +338,7 @@ export default function Home() {
       {/* files list */}
       <div className="w-full p-4 flex flex-wrap gap-4">
         <IoIosLink size={14 * 2.5} />
-        {elements
+        {getDataBasePathOnly(elements)
           .filter((e) => e.type === "link")
           .map((e) => (
             <LinkEl

@@ -6,6 +6,11 @@ export type Link = {
   title: string;
   path: string;
   url: string;
+
+  dimentions?: {
+    id: string;
+    value: number;
+  }[];
 };
 
 export default function Link(props: {
