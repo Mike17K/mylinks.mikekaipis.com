@@ -14,7 +14,7 @@ type Limit = {
 };
 
 export default function SearchSidebar(props: SearchSidebarProps) {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
   const [results, setResults] = useState<Item[]>(props.elements);
   const [filters, setFilters] = useState<{
     [key: Dimention["id"]]: Limit;

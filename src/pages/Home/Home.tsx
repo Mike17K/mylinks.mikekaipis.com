@@ -15,6 +15,7 @@ import { AiOutlineFileAdd, AiTwotoneCompass } from "react-icons/ai";
 import { Item } from "../../components/index";
 import SearchSidebar from "./components/SearchSidebar";
 import { Dimention } from "../../components/Dimention";
+import { getDepth, getPathInDepth } from "../../utils/path";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,44 +26,39 @@ export default function Home() {
   const [isPopupOpen, setIsPopupOpen] = useState<number>(0);
 
   function getDataBasePathOnly(data: Item[]): Item[] {
-    let shorterPath = undefined as string | undefined;
+    if (data.length === 0) return [];
+
+    let minDepth = 1000;
+    let shorterPath = "";
     data.forEach((d) => {
       if (d.type === "dimention") return;
-      if (!shorterPath || d.path.length < shorterPath.length) {
-        shorterPath = d.path;
+      const depth = getDepth(d.path, d.type);
+      console.log("item: ", d.path, d.type, depth);
+      if (depth < minDepth) {
+        console.log("minDepth", minDepth, depth, d.path, d.type);
+        minDepth = depth;
+        shorterPath = getPathInDepth(d.path, minDepth) ?? "/";
       }
     });
-    const parts = (shorterPath ?? "").split("/");
-    shorterPath = parts.slice(0, parts.length - 1).join("/");
 
-    console.log(shorterPath);
+    console.log("shorterPath", shorterPath, minDepth);
 
     return data.filter((d) => {
       if (d.type === "dimention") return false;
 
-      const pathParts = d.path.split("/");
-      const searchPathParts = (shorterPath ?? "").split("/");
-
-      // keep the parts that are folders and have number of parts == searchPathParts + 1
-      // keep the parts that are files and have number of parts == searchPathParts
-      if (d.type === "link-folder") {
-        return (
-          pathParts.length === searchPathParts.length + 1 &&
-          pathParts.join("/").startsWith(searchPathParts.join("/"))
-        );
-      } else if (d.type === "link") {
-        return (
-          pathParts.length === searchPathParts.length + 1 &&
-          pathParts.join("/").startsWith(searchPathParts.join("/"))
-        );
-      }
-      return false;
+      return (
+        d.path.startsWith(shorterPath ?? "/") &&
+        getDepth(d.path, d.type) === minDepth
+      );
     });
   }
 
-  function filterData(data: Item[], path: string) {
+  function filterData(data: Item[], path: string): Item[] {
     return data.filter(
-      (d) => d.type !== "dimention" && d.path.startsWith(path)
+      (d) =>
+        (d.type === "link-folder" &&
+          d.path.startsWith(path === "" ? "/" : path + "/")) ||
+        (d.type === "link" && d.path.startsWith(path || "/"))
     );
   }
 
