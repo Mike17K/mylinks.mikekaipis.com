@@ -15,7 +15,7 @@ import { AiOutlineFileAdd, AiTwotoneCompass } from "react-icons/ai";
 import { Item } from "../../components/index";
 import SearchSidebar from "./components/SearchSidebar";
 import { Dimention } from "../../components/Dimention";
-import { getDepth, getPathInDepth } from "../../utils/path";
+import { filterData, getDataBasePathOnly } from "../../utils";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,43 +24,6 @@ export default function Home() {
 
   const [defaultData, setDefaultData] = useState<Partial<Item>>({});
   const [isPopupOpen, setIsPopupOpen] = useState<number>(0);
-
-  function getDataBasePathOnly(data: Item[]): Item[] {
-    if (data.length === 0) return [];
-
-    let minDepth = 1000;
-    let shorterPath = "";
-    data.forEach((d) => {
-      if (d.type === "dimention") return;
-      const depth = getDepth(d.path, d.type);
-      console.log("item: ", d.path, d.type, depth);
-      if (depth < minDepth) {
-        console.log("minDepth", minDepth, depth, d.path, d.type);
-        minDepth = depth;
-        shorterPath = getPathInDepth(d.path, minDepth) ?? "/";
-      }
-    });
-
-    console.log("shorterPath", shorterPath, minDepth);
-
-    return data.filter((d) => {
-      if (d.type === "dimention") return false;
-
-      return (
-        d.path.startsWith(shorterPath ?? "/") &&
-        getDepth(d.path, d.type) === minDepth
-      );
-    });
-  }
-
-  function filterData(data: Item[], path: string): Item[] {
-    return data.filter(
-      (d) =>
-        (d.type === "link-folder" &&
-          d.path.startsWith(path === "" ? "/" : path + "/")) ||
-        (d.type === "link" && d.path.startsWith(path || "/"))
-    );
-  }
 
   useEffect(() => {
     const path = searchParams.get("path") ?? "";
