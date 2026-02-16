@@ -11,7 +11,7 @@ export function isValidUrl(urlString: string): boolean {
   if (!urlString || urlString.trim() === '') {
     return false;
   }
-  
+
   try {
     const url = new URL(urlString);
     // Check if protocol is http or https
@@ -35,7 +35,7 @@ export function normalizeUrl(urlString: string): string {
   try {
     // Try to parse the URL
     const url = new URL(urlString);
-    
+
     // The URL constructor automatically handles encoding
     // Return the href which has proper encoding
     return url.href;
@@ -70,7 +70,7 @@ export function safeOpenUrl(urlString: string, target: string = '_blank'): Windo
 
   try {
     const normalizedUrl = normalizeUrl(urlString);
-    
+
     if (!isValidUrl(normalizedUrl)) {
       console.error('Invalid URL:', urlString);
       return null;
@@ -145,7 +145,7 @@ export function generateSafeId(title: string): string {
  */
 export function getFaviconUrl(urlString: string, size: number = 128): string {
   const hostname = extractHostname(urlString);
-  
+
   if (!hostname) {
     return '';
   }

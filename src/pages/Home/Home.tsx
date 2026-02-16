@@ -7,10 +7,12 @@ import LinkEl, { Link } from "../../components/Link";
 import { FaFolderPlus } from "react-icons/fa6";
 import { IoIosLink } from "react-icons/io";
 import { FaLevelUpAlt } from "react-icons/fa";
+import { MdImportExport } from "react-icons/md";
 
 import { PiFolderSimple } from "react-icons/pi";
 import Popover from "../../components/Popover";
 import AddItemPopupContent from "./components/AddItemPopupContent";
+import ImportExportModal from "./components/ImportExportModal";
 import { AiOutlineFileAdd, AiTwotoneCompass } from "react-icons/ai";
 import { Item } from "../../components/index";
 import SearchSidebar from "./components/SearchSidebar";
@@ -25,6 +27,7 @@ export default function Home() {
 
   const [defaultData, setDefaultData] = useState<Partial<Item>>({});
   const [isPopupOpen, setIsPopupOpen] = useState<number>(0);
+  const [isImportExportModalOpen, setIsImportExportModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const path = searchParams.get("path") ?? "";
@@ -33,7 +36,7 @@ export default function Home() {
     setElements(filterdData);
 
     const dimentionsData = JSON.parse(
-      localStorage.getItem("dimentions") ?? "[]"
+      localStorage.getItem("dimentions") ?? "[]",
     ) as Dimention[];
     setDimentions(dimentionsData);
   }, [searchParams]);
@@ -96,6 +99,18 @@ export default function Home() {
     setElements(filteredData);
   }
 
+  function handleImport(data: { items: Item[]; dimentions: Dimention[] }) {
+    // Save imported data to localStorage
+    localStorage.setItem("data", JSON.stringify(data.items));
+    localStorage.setItem("dimentions", JSON.stringify(data.dimentions));
+
+    // Refresh the view
+    const path = searchParams.get("path") ?? "";
+    const filteredData = filterData(data.items, path);
+    setElements(filteredData);
+    setDimentions(data.dimentions);
+  }
+
   return (
     <div className="w-full max-w-screen-lg mx-auto h-[100vh] text-white">
       {/* sidebar */}
@@ -145,6 +160,15 @@ export default function Home() {
 
         {/* add buttons */}
         <div className="flex justify-center items-center gap-2">
+          {/* Import/Export button */}
+          <button
+            onClick={() => setIsImportExportModalOpen(true)}
+            className="bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700 transition-all flex justify-center items-center"
+            title="Import/Export Data"
+          >
+            <MdImportExport className="text-xl" />
+          </button>
+          
           {/* add dimention popup */}
           <Popover
             triggerOpen={
@@ -312,6 +336,17 @@ export default function Home() {
             />
           ))}
       </div>
+
+      {/* Import/Export Modal */}
+      <ImportExportModal
+        isOpen={isImportExportModalOpen}
+        onClose={() => setIsImportExportModalOpen(false)}
+        onImport={handleImport}
+        currentData={{
+          items: JSON.parse(localStorage.getItem("data") ?? "[]"),
+          dimentions: JSON.parse(localStorage.getItem("dimentions") ?? "[]"),
+        }}
+      />
     </div>
   );
 }

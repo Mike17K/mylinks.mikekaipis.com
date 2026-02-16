@@ -76,7 +76,7 @@ export default function SearchSidebar(props: SearchSidebarProps) {
             </h2>
             {Object.keys(filters).map((dimensionId) => {
               const dimension = props.dimentions.find(
-                (d) => d.id === dimensionId
+                (d) => d.id === dimensionId,
               );
               const dimensionTitle = dimension?.title ?? "Dimension Not Found";
               const filter = filters[dimensionId];
