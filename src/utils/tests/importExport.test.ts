@@ -2,7 +2,6 @@ import {
   exportAllData,
   importAllData,
   validateImportData,
-  downloadJSON,
 } from "../importExport";
 import { Item } from "../../components";
 import { Dimention } from "../../components/Dimention";
