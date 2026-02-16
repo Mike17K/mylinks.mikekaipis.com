@@ -16,6 +16,7 @@ import { Item } from "../../components/index";
 import SearchSidebar from "./components/SearchSidebar";
 import { Dimention } from "../../components/Dimention";
 import { filterData, getDataBasePathOnly } from "../../utils";
+import { safeOpenUrl } from "../../utils/url";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -303,7 +304,7 @@ export default function Home() {
             <LinkEl
               key={e.path + e.title}
               data={e}
-              onClick={() => window.open(e.url)}
+              onClick={() => safeOpenUrl(e.url)}
               onEdit={() => {
                 setDefaultData(e);
                 setIsPopupOpen((prev) => prev + 1);

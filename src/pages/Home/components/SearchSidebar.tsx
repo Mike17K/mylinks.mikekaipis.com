@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Item } from "../../../components";
 import { Dimention } from "../../../components/Dimention";
 import LinkEl from "../../../components/Link";
+import { safeOpenUrl } from "../../../utils/url";
 
 type SearchSidebarProps = {
   elements: Item[];
@@ -154,7 +155,7 @@ export default function SearchSidebar(props: SearchSidebarProps) {
                   <LinkEl
                     key={linkItem.path + linkItem.title}
                     data={linkItem}
-                    onClick={() => window.open(linkItem.url)}
+                    onClick={() => safeOpenUrl(linkItem.url)}
                     onEdit={() => {}}
                   ></LinkEl>
                 ))}

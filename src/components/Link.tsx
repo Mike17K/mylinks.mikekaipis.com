@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getFaviconUrl } from "../utils";
 
 export type Link = {
   id: string;
@@ -6,6 +7,8 @@ export type Link = {
   title: string;
   path: string;
   url: string;
+
+  icon_url?: string;
 
   dimentions?: {
     id: string;
@@ -45,6 +48,7 @@ export default function Link(props: {
   };
 
   if (props.data.type !== "link") return <></>;
+  const iconUrl = getFaviconUrl(props.data.url);
 
   return (
     <button
@@ -53,8 +57,15 @@ export default function Link(props: {
       onMouseUp={handleMouseUp}
       onTouchEnd={handleMouseUp}
       onMouseLeave={handleMouseLeave} // In case the mouse leaves the button
-      className="px-6 py-2 bg-green-500 text-white rounded-lg select-none"
+      className="px-6 py-2 bg-green-500 text-white rounded-lg select-none flex items-center justify-center text-left hover:bg-green-600"
     >
+      {iconUrl ? (
+        <img
+          src={iconUrl}
+          alt={`${props.data.title} icon`}
+          className="w-4 h-4 inline-block mr-2"
+        />
+      ) : null}
       {props.data.title}
     </button>
   );

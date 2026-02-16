@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Item } from "../../../components/index";
 import { Link } from "../../../components/Link";
 import { Dimention } from "../../../components/Dimention";
+import { generateSafeId, isValidUrl, normalizeUrl } from "../../../utils/url";
 
 type AddItemPopupContentProps = {
   dimentions: Dimention[];
@@ -34,7 +35,7 @@ export default function AddItemPopupContent({
       // @ts-ignore
       const currentDimentions = (prev.dimentions as Link["dimentions"]) || [];
       const existingDimentionIndex = currentDimentions.findIndex(
-        (d) => d.id === dimentionId
+        (d) => d.id === dimentionId,
       );
       const newValue = Number(value);
 
@@ -75,10 +76,16 @@ export default function AddItemPopupContent({
       return;
     }
 
-    const id = data.title
-      .replaceAll("/", "-")
-      .replaceAll(" ", "-")
-      .toLowerCase();
+    // Validate URL format for links
+    if (data.type === "link" && !isValidUrl(data.url!)) {
+      setError(
+        "Please enter a valid URL (must start with http:// or https://)",
+      );
+      return;
+    }
+
+    // Generate safe ID from title (handles Greek letters and special characters)
+    const id = generateSafeId(data.title!);
 
     let newPath = "/";
     if (data.id && data.type === "link-folder") {
@@ -92,7 +99,18 @@ export default function AddItemPopupContent({
       }
     }
 
-    onAdd({ ...data, id: data.id ?? id, path: newPath } as Item);
+    // Normalize URL before saving (handles encoding for Greek letters and special characters)
+    const finalData =
+      data.type === "link"
+        ? {
+            ...data,
+            url: normalizeUrl(data.url!),
+            id: data.id ?? id,
+            path: newPath,
+          }
+        : { ...data, id: data.id ?? id, path: newPath };
+
+    onAdd(finalData as Item);
     setData({}); // Clear form after successful addition
   };
 
@@ -178,10 +196,13 @@ export default function AddItemPopupContent({
               id="url"
               type="url"
               value={data?.url ?? ""}
-              onChange={(e) =>
-                data.type === "link" &&
-                handleInputChange<Link>("url", e.target.value)
-              }
+              onChange={(e) => {
+                if (data.type !== "link") return;
+                const urlValue = e.target.value;
+
+                // Update URL first
+                handleInputChange<Link>("url", urlValue);
+              }}
               className="px-4 py-1 mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
