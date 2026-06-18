@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 // Items
 import FolderEl, { Folder } from "../../components/Folder";
@@ -16,12 +18,25 @@ import ImportExportModal from "./components/ImportExportModal";
 import { AiOutlineFileAdd, AiTwotoneCompass } from "react-icons/ai";
 import { Item } from "../../components/index";
 import SearchSidebar from "./components/SearchSidebar";
+import Auth from "../../components/Auth";
 import { Dimention } from "../../components/Dimention";
 import { filterData, getDataBasePathOnly } from "../../utils";
 import { safeOpenUrl } from "../../utils/url";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+
+  // Convex hooks (used when authenticated)
+  const convexItems = useQuery(api.queries.getAllItems);
+  const convexDimentions = useQuery(api.queries.getAllDimentions);
+  const upsertItem = useMutation(api.mutations.upsertItem);
+  const deleteItemMut = useMutation(api.mutations.deleteItem);
+  const upsertDimentionMut = useMutation(api.mutations.upsertDimention);
+  const deleteDimentionMut = useMutation(api.mutations.deleteDimention);
+  const importAllDataMut = useMutation(api.mutations.importAllData);
+  const syncLocalData = useMutation(api.mutations.syncLocalData);
+
   const [dimentions, setDimentions] = useState<Dimention[]>([]);
   const [elements, setElements] = useState<Item[]>([]);
 
@@ -29,86 +44,166 @@ export default function Home() {
   const [isPopupOpen, setIsPopupOpen] = useState<number>(0);
   const [isImportExportModalOpen, setIsImportExportModalOpen] = useState<boolean>(false);
 
+  const hasSyncedRef = useRef(false);
+
+  // Sync localStorage data to Convex on first authenticated load
   useEffect(() => {
+    if (!isAuthLoading && isAuthenticated && convexItems !== undefined && !hasSyncedRef.current) {
+      hasSyncedRef.current = true;
+      const localItems = JSON.parse(localStorage.getItem("data") ?? "[]") as Item[];
+      const localDimentions = JSON.parse(
+        localStorage.getItem("dimentions") ?? "[]"
+      ) as Dimention[];
+
+      if (localItems.length > 0 || localDimentions.length > 0) {
+        syncLocalData({
+          items: localItems.filter(
+            (item): item is Folder | Link => item.type !== "dimention"
+          ) as any,
+          dimentions: localDimentions,
+        });
+      }
+    }
+  }, [isAuthLoading, isAuthenticated, convexItems, syncLocalData]);
+
+  // Load data (from Convex if authenticated, otherwise from localStorage)
+  useEffect(() => {
+    if (isAuthLoading) return;
+
     const path = searchParams.get("path") ?? "";
-    const data = JSON.parse(localStorage.getItem("data") ?? "[]") as Item[];
-    const filterdData = filterData(data, path);
-    setElements(filterdData);
 
-    const dimentionsData = JSON.parse(
-      localStorage.getItem("dimentions") ?? "[]",
-    ) as Dimention[];
-    setDimentions(dimentionsData);
-  }, [searchParams]);
+    if (isAuthenticated && convexItems && convexDimentions) {
+      // Use Convex data
+      const filterdData = filterData(convexItems as Item[], path);
+      setElements(filterdData);
+      setDimentions(convexDimentions as Dimention[]);
+    } else {
+      // Use localStorage fallback
+      const data = JSON.parse(localStorage.getItem("data") ?? "[]") as Item[];
+      const filterdData = filterData(data, path);
+      setElements(filterdData);
 
-  function addElement(f: Item) {
-    // add to local storage
-    const data = (
-      JSON.parse(localStorage.getItem("data") ?? "[]") as Item[]
-    ).filter((d) => d.id !== f.id || d.type !== f.type);
-    data.push(f as Item);
-    localStorage.setItem("data", JSON.stringify(data));
+      const dimentionsData = JSON.parse(
+        localStorage.getItem("dimentions") ?? "[]",
+      ) as Dimention[];
+      setDimentions(dimentionsData);
+    }
+  }, [searchParams, isAuthenticated, isAuthLoading, convexItems, convexDimentions]);
 
-    // filter and set elements
+  async function addElement(f: Item) {
+    if (isAuthenticated) {
+      // Use Convex
+      if (f.type !== "dimention") {
+        await upsertItem(f as Folder | Link);
+      }
+    } else {
+      // Use localStorage
+      const data = (
+        JSON.parse(localStorage.getItem("data") ?? "[]") as Item[]
+      ).filter((d) => d.id !== f.id || d.type !== f.type);
+      data.push(f as Item);
+      localStorage.setItem("data", JSON.stringify(data));
+    }
+
+    // Update UI
     const path = searchParams.get("path") ?? "";
-    const filteredData = filterData(data, path);
+    const sourceData = isAuthenticated
+      ? (convexItems as Item[] ?? [])
+      : (JSON.parse(localStorage.getItem("data") ?? "[]") as Item[]);
+    const filteredData = filterData(sourceData, path);
     setElements(filteredData);
   }
 
-  function onDeleteItem(id: string) {
-    const data = (
-      JSON.parse(localStorage.getItem("data") ?? "[]") as Item[]
-    ).filter((d) => d.id !== id);
-    localStorage.setItem("data", JSON.stringify(data));
+  async function onDeleteItem(id: string) {
+    if (isAuthenticated) {
+      await deleteItemMut({ id });
+    } else {
+      const data = (
+        JSON.parse(localStorage.getItem("data") ?? "[]") as Item[]
+      ).filter((d) => d.id !== id);
+      localStorage.setItem("data", JSON.stringify(data));
+    }
 
-    // filter and set elements
     const path = searchParams.get("path") ?? "";
-    const filteredData = filterData(data, path);
+    const sourceData = isAuthenticated
+      ? (convexItems as Item[] ?? [])
+      : (JSON.parse(localStorage.getItem("data") ?? "[]") as Item[]);
+    const filteredData = filterData(sourceData, path);
     setElements(filteredData);
   }
 
-  function addDimention(d: Dimention) {
-    // add dimention if new
-    const dimentionsData = (
-      JSON.parse(localStorage.getItem("dimentions") ?? "[]") as Dimention[]
-    ).filter((dim) => dim.id !== d.id);
-    dimentionsData.push(d);
-    localStorage.setItem("dimentions", JSON.stringify(dimentionsData));
-    setDimentions(dimentionsData);
+  async function addDimention(d: Dimention) {
+    if (isAuthenticated) {
+      await upsertDimentionMut({ id: d.id, title: d.title });
+    } else {
+      const dimentionsData = (
+        JSON.parse(localStorage.getItem("dimentions") ?? "[]") as Dimention[]
+      ).filter((dim) => dim.id !== d.id);
+      dimentionsData.push(d);
+      localStorage.setItem("dimentions", JSON.stringify(dimentionsData));
+      setDimentions(dimentionsData);
+    }
+
+    if (!isAuthenticated) {
+      const sourceDimentions = JSON.parse(
+        localStorage.getItem("dimentions") ?? "[]"
+      ) as Dimention[];
+      setDimentions(sourceDimentions);
+    }
   }
 
-  function deleteDimention(id: string) {
-    // add dimention if new
-    const dimentionsData = (
-      JSON.parse(localStorage.getItem("dimentions") ?? "[]") as Dimention[]
-    ).filter((d) => d.id !== id);
-    localStorage.setItem("dimentions", JSON.stringify(dimentionsData));
-    setDimentions(dimentionsData);
+  async function deleteDimention(id: string) {
+    if (isAuthenticated) {
+      await deleteDimentionMut({ id });
+    } else {
+      const dimentionsData = (
+        JSON.parse(localStorage.getItem("dimentions") ?? "[]") as Dimention[]
+      ).filter((d) => d.id !== id);
+      localStorage.setItem("dimentions", JSON.stringify(dimentionsData));
+      setDimentions(dimentionsData);
 
-    const data = (JSON.parse(localStorage.getItem("data") ?? "[]") as Item[])
-      .filter((d) => d.type !== "dimention")
-      .map((d) => ({
-        ...d,
-        dimentions: [...(d.dimentions ?? []).filter((dim) => dim.id !== id)],
-      }));
-    localStorage.setItem("data", JSON.stringify(data));
+      const data = (JSON.parse(localStorage.getItem("data") ?? "[]") as Item[])
+        .filter((d) => d.type !== "dimention")
+        .map((d) => ({
+          ...d,
+          dimentions: [...(d.dimentions ?? []).filter((dim) => dim.id !== id)],
+        }));
+      localStorage.setItem("data", JSON.stringify(data));
 
-    // filter and set elements
-    const path = searchParams.get("path") ?? "";
-    const filteredData = filterData(data, path);
-    setElements(filteredData);
+      const path = searchParams.get("path") ?? "";
+      const filteredData = filterData(data, path);
+      setElements(filteredData);
+    }
   }
 
-  function handleImport(data: { items: Item[]; dimentions: Dimention[] }) {
-    // Save imported data to localStorage
-    localStorage.setItem("data", JSON.stringify(data.items));
-    localStorage.setItem("dimentions", JSON.stringify(data.dimentions));
+  async function handleImport(data: { items: Item[]; dimentions: Dimention[] }) {
+    if (isAuthenticated) {
+      await importAllDataMut({
+        items: data.items.filter(
+          (item): item is Folder | Link => item.type !== "dimention"
+        ) as any,
+        dimentions: data.dimentions,
+      });
+    } else {
+      localStorage.setItem("data", JSON.stringify(data.items));
+      localStorage.setItem("dimentions", JSON.stringify(data.dimentions));
+    }
 
-    // Refresh the view
     const path = searchParams.get("path") ?? "";
-    const filteredData = filterData(data.items, path);
+    const sourceData = isAuthenticated
+      ? (convexItems as Item[] ?? [])
+      : data.items;
+    const filteredData = filterData(sourceData, path);
     setElements(filteredData);
     setDimentions(data.dimentions);
+  }
+
+  if (isAuthLoading) {
+    return (
+      <div className="w-full max-w-screen-lg mx-auto h-[100vh] text-white flex items-center justify-center">
+        <p className="text-gray-400">Loading...</p>
+      </div>
+    );
   }
 
   return (
@@ -158,8 +253,11 @@ export default function Home() {
             )}
         </h2>
 
-        {/* add buttons */}
+        {/* auth + add buttons */}
         <div className="flex justify-center items-center gap-2">
+          {/* Auth component */}
+          <Auth />
+
           {/* Import/Export button */}
           <button
             onClick={() => setIsImportExportModalOpen(true)}
@@ -343,8 +441,12 @@ export default function Home() {
         onClose={() => setIsImportExportModalOpen(false)}
         onImport={handleImport}
         currentData={{
-          items: JSON.parse(localStorage.getItem("data") ?? "[]"),
-          dimentions: JSON.parse(localStorage.getItem("dimentions") ?? "[]"),
+          items: isAuthenticated
+            ? (convexItems as Item[] ?? [])
+            : JSON.parse(localStorage.getItem("data") ?? "[]"),
+          dimentions: isAuthenticated
+            ? (convexDimentions as Dimention[] ?? [])
+            : JSON.parse(localStorage.getItem("dimentions") ?? "[]"),
         }}
       />
     </div>
